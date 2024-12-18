@@ -120,6 +120,8 @@ class MainWindow : public QMainWindow {
     void on_actionViewIconsFolder_triggered();
     void on_actionViewLogsFolder_triggered();
 
+    void on_actionViewSkinsFolder_triggered();
+
     void on_actionViewSelectedInstFolder_triggered();
 
     void refreshInstances();
@@ -158,7 +160,6 @@ class MainWindow : public QMainWindow {
     void on_actionExportInstanceZip_triggered();
     void on_actionExportInstanceMrPack_triggered();
     void on_actionExportInstanceFlamePack_triggered();
-    void on_actionExportInstanceToModList_triggered();
 
     void on_actionRenameInstance_triggered();
 
@@ -205,6 +206,8 @@ class MainWindow : public QMainWindow {
 
     void globalSettingsClosed();
 
+    void setStatusBarVisibility(bool);
+
     void lockToolbars(bool);
 
 #ifndef Q_OS_MAC
@@ -226,7 +229,6 @@ class MainWindow : public QMainWindow {
 
     void runModalTask(Task* task);
     void instanceFromInstanceTask(InstanceTask* task);
-    void finalizeInstance(InstancePtr inst);
 
    private:
     Ui::MainWindow* ui;

@@ -79,11 +79,9 @@ QProcessEnvironment CleanEnviroment()
 
     QStringList stripped = {
 #if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD) || defined(Q_OS_OPENBSD)
-        "LD_LIBRARY_PATH",
-        "LD_PRELOAD",
+        "LD_LIBRARY_PATH", "LD_PRELOAD",
 #endif
-        "QT_PLUGIN_PATH",
-        "QT_FONTPATH"
+        "QT_PLUGIN_PATH", "QT_FONTPATH"
     };
     for (auto key : rawenv.keys()) {
         auto value = rawenv.value(key);
@@ -376,7 +374,19 @@ QList<QString> JavaUtils::FindJavaPaths()
     auto home = qEnvironmentVariable("HOME");
 
     // javas downloaded by sdkman
-    javas.append(FS::PathCombine(home, ".sdkman/candidates/java"));
+    QDir sdkmanDir(FS::PathCombine(home, ".sdkman/candidates/java"));
+    QStringList sdkmanJavas = sdkmanDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    foreach (const QString& java, sdkmanJavas) {
+        javas.append(sdkmanDir.absolutePath() + "/" + java + "/bin/java");
+    }
+
+    // java in user library folder (like from intellij downloads)
+    QDir userLibraryJVMDir(FS::PathCombine(home, "Library/Java/JavaVirtualMachines/"));
+    QStringList userLibraryJVMJavas = userLibraryJVMDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    foreach (const QString& java, userLibraryJVMJavas) {
+        javas.append(userLibraryJVMDir.absolutePath() + "/" + java + "/Contents/Home/bin/java");
+        javas.append(userLibraryJVMDir.absolutePath() + "/" + java + "/Contents/Commands/java");
+    }
 
     javas.append(getMinecraftJavaBundle());
     javas = addJavasFromEnv(javas);
@@ -384,7 +394,7 @@ QList<QString> JavaUtils::FindJavaPaths()
     return javas;
 }
 
-#elif defined(Q_OS_LINUX)
+#elif defined(Q_OS_LINUX) || defined(Q_OS_OPENBSD) || defined(Q_OS_FREEBSD)
 QList<QString> JavaUtils::FindJavaPaths()
 {
     QList<QString> javas;
@@ -409,12 +419,17 @@ QList<QString> JavaUtils::FindJavaPaths()
             scanJavaDir(snap + dirPath);
         }
     };
+#if defined(Q_OS_LINUX)
     // oracle RPMs
     scanJavaDirs("/usr/java");
     // general locations used by distro packaging
     scanJavaDirs("/usr/lib/jvm");
     scanJavaDirs("/usr/lib64/jvm");
     scanJavaDirs("/usr/lib32/jvm");
+    // Gentoo's locations for openjdk and openjdk-bin respectively
+    scanJavaDir("/usr/lib64");
+    scanJavaDir("/usr/lib");
+    scanJavaDir("/opt");
     // javas stored in Prism Launcher's folder
     scanJavaDirs("java");
     // manually installed JDKs in /opt
@@ -423,7 +438,10 @@ QList<QString> JavaUtils::FindJavaPaths()
     scanJavaDirs("/opt/ibm");  // IBM Semeru Certified Edition
     // flatpak
     scanJavaDirs("/app/jdk");
-
+#elif defined(Q_OS_OPENBSD) || defined(Q_OS_FREEBSD)
+    // ports install to /usr/local on OpenBSD & FreeBSD
+    scanJavaDirs("/usr/local");
+#endif
     auto home = qEnvironmentVariable("HOME");
 
     // javas downloaded by IntelliJ
